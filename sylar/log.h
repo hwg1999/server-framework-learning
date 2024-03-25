@@ -1,7 +1,7 @@
 #pragma once
 
 #include "singleton.h"
-#include "util.h"
+#include "sylar/util.h"
 #include <cstdarg>
 #include <cstdint>
 #include <ctime>
@@ -32,8 +32,8 @@ namespace sylar {
 #define SYLAR_LOG_FMT_LEVEL( logger, level, fmt, ... )                                                             \
   if ( logger->getLevel() <= level )                                                                               \
   sylar::LogEventWrap(                                                                                             \
-    sylar::LogEventSPtr( std::make_shared<sylar::LogEvent>(                                                        \
-      logger, level, __FILE__, __LINE__, 0, sylar::GetThreadId(), sylar::GetFiberId(), std::time( 0 ) ) ) )        \
+    std::make_shared<sylar::LogEvent>(                                                                             \
+      logger, level, __FILE__, __LINE__, 0, sylar::GetThreadId(), sylar::GetFiberId(), std::time( 0 ) ) )          \
     .getEvent()                                                                                                    \
     ->format( fmt, __VA_ARGS__ )
 
@@ -48,18 +48,7 @@ namespace sylar {
 #define SYLAR_LOG_FMT_FATAL( logger, fmt, ... )                                                                    \
   SYLAR_LOG_FMT_LEVEL( logger, sylar::LogLevel::FATAL, fmt, __VA_ARGS__ )
 
-#define SYLAR_LOG_ROOT() sylar::LoggerMgr::GetInstance()->getRoot()
-
-#define SHARED_PTR_DECLEARE( className )                                                                           \
-  class className;                                                                                                 \
-  using className##SPtr = std::shared_ptr<className>;
-
-SHARED_PTR_DECLEARE( LogEvent )
-SHARED_PTR_DECLEARE( LogFormatter )
-SHARED_PTR_DECLEARE( LogAppender )
-SHARED_PTR_DECLEARE( Logger )
-SHARED_PTR_DECLEARE( StdoutLogAppender )
-SHARED_PTR_DECLEARE( FileLogAppender )
+#define SYLAR_LOG_ROOT() sylar::LoggerMgr::GetInstance().getRoot()
 
 // 日志级别
 class LogLevel
@@ -78,12 +67,15 @@ public:
   static const char* ToString( LogLevel::Level level );
 };
 
+class Logger;
+
 // 日志事件类
-SHARED_PTR_DECLEARE( LogEvent )
 class LogEvent
 {
 public:
-  LogEvent( LoggerSPtr logger,
+  using SPtr = std::shared_ptr<LogEvent>;
+
+  LogEvent( std::shared_ptr<Logger> logger,
             LogLevel::Level level,
             const char* file,
             std::int32_t line,
@@ -100,7 +92,7 @@ public:
   std::uint64_t getTime() const { return m_time; }
   std::string getContent() const { return m_ss.str(); }
   std::stringstream& getSS() { return m_ss; }
-  LoggerSPtr getLogger() const { return m_logger; }
+  std::shared_ptr<Logger> getLogger() const { return m_logger; }
   LogLevel::Level getLevel() const { return m_level; }
 
   void format( const char* fmt, ... );
@@ -114,28 +106,30 @@ private:
   std::uint32_t m_fiberId { 0 };  // 协程id
   std::uint64_t m_time { 0 };     // 时间戳
   std::stringstream m_ss;
-  LoggerSPtr m_logger;
+  std::shared_ptr<Logger> m_logger;
   LogLevel::Level m_level;
 };
 
 class LogEventWrap
 {
 public:
-  LogEventWrap( LogEventSPtr event );
+  LogEventWrap( LogEvent::SPtr event );
   ~LogEventWrap();
-  LogEventSPtr getEvent() const { return m_event; }
+  LogEvent::SPtr getEvent() const { return m_event; }
   std::stringstream& getSS() const { return m_event->getSS(); }
 
 private:
-  LogEventSPtr m_event;
+  LogEvent::SPtr m_event;
 };
 
 // 日志格式器
 class LogFormatter
 {
 public:
+  using SPtr = std::shared_ptr<LogFormatter>;
+
   LogFormatter( const std::string& pattern );
-  std::string format( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEventSPtr event );
+  std::string format( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event );
 
 public:
   enum ParseResultIdx
@@ -151,15 +145,16 @@ public:
     INNER_SYMBOL,
   };
 
-  SHARED_PTR_DECLEARE( FormatItem );
   class FormatItem
   {
   public:
+    using SPtr = std::shared_ptr<FormatItem>;
+
     virtual ~FormatItem() {}
     virtual void format( std::ostream& os,
                          std::shared_ptr<Logger> logger,
                          LogLevel::Level level,
-                         LogEventSPtr event )
+                         LogEvent::SPtr event )
       = 0;
   };
 
@@ -167,59 +162,63 @@ public:
 
 private:
   std::string m_pattern;
-  std::vector<FormatItemSPtr> m_items;
+  std::vector<FormatItem::SPtr> m_items;
 };
 
 // 日志输出地
 class LogAppender
 {
 public:
-  virtual ~LogAppender() {}
-  virtual void log( LoggerSPtr logger, LogLevel::Level level, LogEventSPtr event ) = 0;
+  using SPtr = std::shared_ptr<LogAppender>;
 
-  void setFormatter( LogFormatterSPtr val ) { m_formatter = val; }
-  LogFormatterSPtr getFormatter() const { return m_formatter; }
+  virtual ~LogAppender() {}
+  virtual void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event ) = 0;
+
+  void setFormatter( LogFormatter::SPtr val ) { m_formatter = val; }
+  LogFormatter::SPtr getFormatter() const { return m_formatter; }
 
   LogLevel::Level getLevel() const { return m_level; }
   void setLevel( LogLevel::Level val ) { m_level = val; }
 
 protected:
   LogLevel::Level m_level;
-  LogFormatterSPtr m_formatter;
+  LogFormatter::SPtr m_formatter;
 };
 
 // 日志器
 class Logger : public std::enable_shared_from_this<Logger>
 {
 public:
+  using SPtr = std::shared_ptr<Logger>;
+
   Logger( const std::string& name = "root" );
-  void log( LogLevel::Level level, LogEventSPtr event );
+  void log( LogLevel::Level level, LogEvent::SPtr event );
 
-  void debug( LogEventSPtr event );
-  void info( LogEventSPtr event );
-  void warn( LogEventSPtr event );
-  void error( LogEventSPtr event );
-  void fatal( LogEventSPtr event );
+  void debug( LogEvent::SPtr event );
+  void info( LogEvent::SPtr event );
+  void warn( LogEvent::SPtr event );
+  void error( LogEvent::SPtr event );
+  void fatal( LogEvent::SPtr event );
 
-  void addAppender( LogAppenderSPtr appender );
-  void delAppender( LogAppenderSPtr appender );
+  void addAppender( LogAppender::SPtr appender );
+  void delAppender( LogAppender::SPtr appender );
   LogLevel::Level getLevel() const { return m_level; }
   void setLevel( LogLevel::Level val ) { m_level = val; }
 
   const std::string& getName() const { return m_name; }
 
 private:
-  std::string m_name;                     // 日志名称
-  LogLevel::Level m_level;                // 满足日志级别才能输出
-  std::list<LogAppenderSPtr> m_appenders; // Appender列表
-  LogFormatterSPtr m_formatter;
+  std::string m_name;                       // 日志名称
+  LogLevel::Level m_level;                  // 满足日志级别才能输出
+  std::list<LogAppender::SPtr> m_appenders; // Appender列表
+  LogFormatter::SPtr m_formatter;
 };
 
 // 输出到控制台的Appender
 class StdoutLogAppender : public LogAppender
 {
 public:
-  virtual void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEventSPtr event ) override;
+  virtual void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event ) override;
 };
 
 // 输出到文件的Appender
@@ -227,7 +226,7 @@ class FileLogAppender : public LogAppender
 {
 public:
   FileLogAppender( const std::string& filename );
-  void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEventSPtr event ) override;
+  void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event ) override;
 
   // 重新打开文件返回true
   bool reopen();
@@ -241,12 +240,12 @@ class LoggerManager
 {
 public:
   LoggerManager();
-  LoggerSPtr getLogger( const std::string& name );
-  LoggerSPtr getRoot() const { return m_root; }
+  Logger::SPtr getLogger( const std::string& name );
+  Logger::SPtr getRoot() const { return m_root; }
 
 private:
-  std::map<std::string, LoggerSPtr> m_loggers;
-  LoggerSPtr m_root;
+  std::map<std::string, Logger::SPtr> m_loggers;
+  Logger::SPtr m_root;
 };
 
 using LoggerMgr = sylar::Singleton<LoggerManager>;
