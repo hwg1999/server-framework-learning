@@ -1,6 +1,7 @@
 #include "sylar/config.h"
 #include "sylar/log.h"
 #include "yaml-cpp/yaml.h"
+#include <iostream>
 #include <list>
 #include <set>
 #include <sstream>
@@ -207,10 +208,28 @@ void test_class()
 #undef XX_PM
 }
 
+void test_log()
+{
+  static sylar::Logger::SPtr system_log = SYLAR_LOG_NAME( "system" );
+  SYLAR_LOG_INFO( system_log ) << "hello system" << std::endl;
+  std::cout << sylar::LoggerMgr::GetInstance().toYamlString() << std::endl;
+  YAML::Node root = YAML::LoadFile( "./config/log.yml" );
+  sylar::Config::LoadFromYaml( root );
+  std::cout << "=============" << std::endl;
+  std::cout << sylar::LoggerMgr::GetInstance().toYamlString() << std::endl;
+  std::cout << "=============" << std::endl;
+  std::cout << root << std::endl;
+  SYLAR_LOG_INFO( system_log ) << "hello system" << std::endl;
+
+  system_log->setFormatter( "%d - %m%n" );
+  SYLAR_LOG_INFO( system_log ) << "hello system" << std::endl;
+}
+
 int main()
 {
   // test_yaml();
   // test_config();
-  test_class();
+  // test_class();
+  test_log();
   return 0;
 }
