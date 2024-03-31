@@ -2,6 +2,7 @@
 
 #include "singleton.h"
 #include "sylar/util.h"
+#include "thread.h"
 #include <cstdarg>
 #include <cstdint>
 #include <ctime>
@@ -175,21 +176,26 @@ private:
 // 日志输出地
 class LogAppender
 {
+  friend class Logger;
+
 public:
   using SPtr = std::shared_ptr<LogAppender>;
+  using MutexType = SpinLock;
 
   virtual ~LogAppender() {}
   virtual void log( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event ) = 0;
   virtual std::string toYamlString() = 0;
 
-  void setFormatter( LogFormatter::SPtr val ) { m_formatter = val; }
-  LogFormatter::SPtr getFormatter() const { return m_formatter; }
+  void setFormatter( LogFormatter::SPtr val );
+  LogFormatter::SPtr getFormatter();
 
   LogLevel::Level getLevel() const { return m_level; }
   void setLevel( LogLevel::Level val ) { m_level = val; }
 
 protected:
-  LogLevel::Level m_level;
+  LogLevel::Level m_level { LogLevel::DEBUG };
+  bool m_hasFormatter { false };
+  MutexType m_mutex;
   LogFormatter::SPtr m_formatter;
 };
 
@@ -200,6 +206,7 @@ class Logger : public std::enable_shared_from_this<Logger>
 
 public:
   using SPtr = std::shared_ptr<Logger>;
+  using MutexType = SpinLock;
 
   Logger( const std::string& name = "root" );
   void log( LogLevel::Level level, LogEvent::SPtr event );
@@ -225,8 +232,9 @@ public:
   std::string toYamlString();
 
 private:
-  std::string m_name;                       // 日志名称
-  LogLevel::Level m_level;                  // 满足日志级别才能输出
+  std::string m_name;      // 日志名称
+  LogLevel::Level m_level; // 满足日志级别才能输出
+  MutexType m_mutex;
   std::list<LogAppender::SPtr> m_appenders; // Appender列表
   LogFormatter::SPtr m_formatter;
   Logger::SPtr m_root;
@@ -257,11 +265,14 @@ public:
 private:
   std::string m_filename;
   std::ofstream m_filestream;
+  std::uint64_t m_lastTime { 0 };
 };
 
 class LoggerManager
 {
 public:
+  using MutexType = SpinLock;
+
   LoggerManager();
   Logger::SPtr getLogger( const std::string& name );
 
@@ -269,7 +280,9 @@ public:
   void init();
 
   std::string toYamlString();
+
 private:
+  MutexType m_mutex;
   std::map<std::string, Logger::SPtr> m_loggers;
   Logger::SPtr m_root;
 };

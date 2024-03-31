@@ -72,7 +72,7 @@ void test_config()
   SYLAR_LOG_INFO( SYLAR_LOG_ROOT() ) << "before: " << g_float_value_config->toString();
 #define XX( g_var, name, prefix )                                                                                  \
   {                                                                                                                \
-    auto& v = g_var->getValue();                                                                                   \
+    const auto& v = g_var->getValue();                                                                             \
     for ( auto& i : v ) {                                                                                          \
       SYLAR_LOG_INFO( SYLAR_LOG_ROOT() ) << #prefix " " #name ": " << i;                                           \
     }                                                                                                              \
@@ -81,7 +81,7 @@ void test_config()
 
 #define XX_M( g_var, name, prefix )                                                                                \
   {                                                                                                                \
-    auto& v = g_var->getValue();                                                                                   \
+    const auto& v = g_var->getValue();                                                                             \
     for ( auto& i : v ) {                                                                                          \
       SYLAR_LOG_INFO( SYLAR_LOG_ROOT() ) << #prefix " " #name ": {" << i.first << " - " << i.second << "}";        \
     }                                                                                                              \
@@ -129,7 +129,7 @@ public:
 
   bool operator==( const Person& other ) const
   {
-    return m_name == other.m_name && m_age == other.m_age && m_sex << other.m_sex;
+    return m_name == other.m_name && m_age == other.m_age && m_sex == other.m_sex;
   }
 };
 

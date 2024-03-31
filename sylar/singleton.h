@@ -19,7 +19,7 @@ class SingletonPtr
 public:
   static std::shared_ptr<T> GetInstance()
   {
-    static std::shared_ptr<T> instance( std::make_shared<T>() );
+    static std::shared_ptr<T> instance { std::make_shared<T>() };
     return instance;
   }
 };

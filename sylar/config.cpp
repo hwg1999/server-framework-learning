@@ -9,8 +9,9 @@ namespace sylar {
 
 ConfigVarBase::SPtr Config::LookupBase( const std::string& name )
 {
-  auto it = s_datas.find( name );
-  return it == s_datas.end() ? nullptr : it->second;
+  RWMutexType::ReadLock lock { GetMutex() };
+  auto it = GetDatas().find( name );
+  return it == GetDatas().end() ? nullptr : it->second;
 }
 
 static void ListAllMember( const std::string& prefix,
@@ -52,6 +53,15 @@ void Config::LoadFromYaml( const YAML::Node& root )
         var->fromString( ss.str() );
       }
     }
+  }
+}
+
+void Config::Visit( std::function<void( ConfigVarBase::SPtr )> cb )
+{
+  RWMutexType::ReadLock lock { GetMutex() };
+  ConfigVarMap& mp = GetDatas();
+  for ( auto it = mp.begin(); it != mp.end(); ++it ) {
+    cb( it->second );
   }
 }
 
