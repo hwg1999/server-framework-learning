@@ -1,6 +1,7 @@
 #pragma once
 
 #include "singleton.h"
+#include "sylar/thread.h"
 #include "sylar/util.h"
 #include "thread.h"
 #include <cstdarg>
@@ -19,9 +20,15 @@ namespace sylar {
 
 #define SYLAR_LOG_LEVEL( logger, level )                                                                           \
   if ( logger->getLevel() <= level )                                                                               \
-  sylar::LogEventWrap(                                                                                             \
-    std::make_shared<sylar::LogEvent>(                                                                             \
-      logger, level, __FILE__, __LINE__, 0, sylar::GetThreadId(), sylar::GetFiberId(), std::time( 0 ) ) )          \
+  sylar::LogEventWrap( std::make_shared<sylar::LogEvent>( logger,                                                  \
+                                                          level,                                                   \
+                                                          __FILE__,                                                \
+                                                          __LINE__,                                                \
+                                                          0,                                                       \
+                                                          sylar::GetThreadId(),                                    \
+                                                          sylar::GetFiberId(),                                     \
+                                                          std::time( 0 ),                                          \
+                                                          sylar::Thread::GetName() ) )                             \
     .getSS()
 
 #define SYLAR_LOG_DEBUG( logger ) SYLAR_LOG_LEVEL( logger, sylar::LogLevel::DEBUG )
@@ -32,9 +39,15 @@ namespace sylar {
 
 #define SYLAR_LOG_FMT_LEVEL( logger, level, fmt, ... )                                                             \
   if ( logger->getLevel() <= level )                                                                               \
-  sylar::LogEventWrap(                                                                                             \
-    std::make_shared<sylar::LogEvent>(                                                                             \
-      logger, level, __FILE__, __LINE__, 0, sylar::GetThreadId(), sylar::GetFiberId(), std::time( 0 ) ) )          \
+  sylar::LogEventWrap( std::make_shared<sylar::LogEvent>( logger,                                                  \
+                                                          level,                                                   \
+                                                          __FILE__,                                                \
+                                                          __LINE__,                                                \
+                                                          0,                                                       \
+                                                          sylar::GetThreadId(),                                    \
+                                                          sylar::GetFiberId(),                                     \
+                                                          std::time( 0 ),                                          \
+                                                          sylar::Thread::GetName() ) )                             \
     .getEvent()                                                                                                    \
     ->format( fmt, __VA_ARGS__ )
 
@@ -86,7 +99,8 @@ public:
             std::uint32_t elapse,
             std::uint32_t thread_id,
             uint32_t fiber_id,
-            std::uint64_t time );
+            std::uint64_t time,
+            const std::string& thread_name );
 
   const char* getFile() const { return m_file; }
   std::int32_t getLine() const { return m_line; }
@@ -94,6 +108,7 @@ public:
   std::uint32_t getThreadId() const { return m_threadId; }
   std::uint32_t getFiberId() const { return m_fiberId; }
   std::uint64_t getTime() const { return m_time; }
+  const std::string& getThreadName() const { return m_threadName; }
   std::string getContent() const { return m_ss.str(); }
   std::stringstream& getSS() { return m_ss; }
   std::shared_ptr<Logger> getLogger() const { return m_logger; }
@@ -109,7 +124,9 @@ private:
   std::uint32_t m_threadId { 0 }; // 线程id
   std::uint32_t m_fiberId { 0 };  // 协程id
   std::uint64_t m_time { 0 };     // 时间戳
+  std::string m_threadName;
   std::stringstream m_ss;
+
   std::shared_ptr<Logger> m_logger;
   LogLevel::Level m_level;
 };

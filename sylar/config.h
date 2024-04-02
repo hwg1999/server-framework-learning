@@ -319,7 +319,7 @@ public:
     m_val = val;
   }
 
-  std::uint64_t addListener( std::uint64_t key, on_change_cb cb )
+  std::uint64_t addListener(on_change_cb cb )
   {
     static std::uint64_t s_fun_id { 0 };
     RWMutexType::WriteLock lock { m_mutex };
