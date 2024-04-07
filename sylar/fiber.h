@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -8,8 +7,11 @@
 
 namespace sylar {
 
+class Scheduler;
 class Fiber : public std::enable_shared_from_this<Fiber>
 {
+  friend class Scheduler;
+
 public:
   using SPtr = std::shared_ptr<Fiber>;
 
@@ -27,12 +29,15 @@ private:
   Fiber();
 
 public:
-  Fiber( std::function<void()> cb, std::size_t stacksize = 0 );
+  Fiber( std::function<void()> cb, std::size_t stacksize = 0, bool use_caller = false );
   ~Fiber();
 
   void reset( std::function<void()> cb );
-  // void swapIn();
-  // void swapOut();
+  void swapIn();
+  void swapOut();
+
+  void call();
+  void back();
 
   std::uint64_t getId() const { return m_id; }
   State getState() const { return m_state; }
@@ -44,6 +49,7 @@ public:
   static uint64_t TotalFibers();
 
   static void MainFunc();
+  static void CallerMainFunc();
   static std::uint64_t GetFiberId();
 
 private:
