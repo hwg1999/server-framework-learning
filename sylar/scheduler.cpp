@@ -9,6 +9,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace sylar {
 
@@ -74,11 +75,6 @@ void Scheduler::start()
     m_threadIds.push_back( m_threads[i]->getId() );
   }
   lock.unlock();
-
-  if ( m_rootFiber ) {
-    m_rootFiber->call();
-    SYLAR_LOG_INFO( g_logger ) << "call out " << m_rootFiber->getState();
-  }
 }
 
 void Scheduler::stop()
@@ -107,6 +103,19 @@ void Scheduler::stop()
 
   if ( m_rootFiber ) {
     tickle();
+    if ( !stopping() ) {
+      m_rootFiber->call();
+    }
+  }
+
+  std::vector<Thread::SPtr> thrs;
+  {
+    MutexType::Lock lock { m_mutex };
+    thrs.swap( m_threads );
+  }
+
+  for ( auto& i : thrs ) {
+    i->join();
   }
 }
 
@@ -130,6 +139,7 @@ void Scheduler::run()
   while ( true ) {
     ft.reset();
     bool tickle_me { false };
+    bool is_active { false };
 
     {
       MutexType::Lock lock { m_mutex };
@@ -149,6 +159,8 @@ void Scheduler::run()
 
         ft = *it;
         m_fibers.erase( it );
+        ++m_activeThreadCount;
+        is_active = true;
         break;
       }
     }
@@ -157,8 +169,7 @@ void Scheduler::run()
       tickle();
     }
 
-    if ( ft.fiber && ft.fiber->getState() != Fiber::TERM && ft.fiber->getState() != Fiber::EXCEPT  ) {
-      ++m_activeThreadCount;
+    if ( ft.fiber && ft.fiber->getState() != Fiber::TERM && ft.fiber->getState() != Fiber::EXCEPT ) {
       ft.fiber->swapIn();
       --m_activeThreadCount;
 
@@ -175,7 +186,6 @@ void Scheduler::run()
         cb_fiber.reset( new Fiber( ft.cb ) );
       }
       ft.reset();
-      ++m_activeThreadCount;
       cb_fiber->swapIn();
       --m_activeThreadCount;
       if ( cb_fiber->getState() == Fiber::READY ) {
@@ -188,6 +198,11 @@ void Scheduler::run()
         cb_fiber.reset();
       }
     } else {
+      if ( is_active ) {
+        --m_activeThreadCount;
+        continue;
+      }
+
       if ( idle_fiber->getState() == Fiber::TERM ) {
         SYLAR_LOG_INFO( g_logger ) << "idle fiber term";
         break;
@@ -217,6 +232,9 @@ bool Scheduler::stopping()
 void Scheduler::idle()
 {
   SYLAR_LOG_INFO( g_logger ) << "idle";
+  while ( !stopping() ) {
+    sylar::Fiber::YieldToHold();
+  }
 }
 
 }

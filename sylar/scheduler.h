@@ -66,6 +66,8 @@ protected:
 
   void setThis();
 
+  bool hasIdleThreads() { return m_idleThreadCount > 0; }
+
 private:
   template<typename FiberOrCb>
   bool scheduleNoLock( FiberOrCb fc, int thread )
