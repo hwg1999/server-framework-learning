@@ -3,7 +3,7 @@ project(sylar)
 
 # set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -Wno-deprecated -Werror -Wno-unused-function")
 set(LIB_SRC sylar/log.cpp sylar/util.cpp sylar/config.cpp sylar/thread.cpp sylar/fiber.cpp sylar/scheduler.cpp
-    sylar/iomanager.cpp)
+    sylar/iomanager.cpp sylar/timer.cpp)
 
 include_directories(${CMAKE_SOURCE_DIR})
 add_library(sylar SHARED ${LIB_SRC})

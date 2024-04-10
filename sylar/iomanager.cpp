@@ -11,9 +11,11 @@
 #include <cstring>
 #include <fcntl.h>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <vector>
 
 namespace sylar {
 
@@ -271,9 +273,16 @@ void IOManager::tickle()
   SYLAR_ASSERT( ret == 1 );
 }
 
+bool IOManager::stopping( std::uint64_t& timeout )
+{
+  timeout = getNextTimer();
+  return timeout == std::numeric_limits<std::uint64_t>::max() && m_pendingEventCount == 0 && Scheduler::stopping();
+}
+
 bool IOManager::stopping()
 {
-  return Scheduler::stopping() && m_pendingEventCount == 0;
+  std::uint64_t timeout { 0 };
+  return stopping( timeout );
 }
 
 void IOManager::idle()
@@ -282,19 +291,32 @@ void IOManager::idle()
   std::shared_ptr<epoll_event> shared_events { events, []( epoll_event* ptr ) { delete[] ptr; } };
 
   while ( true ) {
-    if ( stopping() ) {
+    std::uint64_t next_timeout { 0 };
+    if ( stopping( next_timeout ) ) {
       SYLAR_LOG_INFO( g_logger ) << "name = " << getName() << " idle stopping exit";
       break;
     }
 
     int ret { 0 };
     do {
-      static constexpr const int MAX_TIMEOUT { 5000 };
-      ret = epoll_wait( m_epfd, events, 64, MAX_TIMEOUT );
+      static constexpr const int MAX_TIMEOUT { 3000 };
+      if ( next_timeout != std::numeric_limits<std::uint64_t>::max() ) {
+        next_timeout = next_timeout > MAX_TIMEOUT ? MAX_TIMEOUT : next_timeout;
+      } else {
+        next_timeout = MAX_TIMEOUT;
+      }
+      ret = epoll_wait( m_epfd, events, 64, next_timeout );
       if ( !( ret < 0 && errno == EINTR ) ) {
         break;
       }
     } while ( true );
+
+    std::vector<std::function<void()>> cbs;
+    listExpiredCb( cbs );
+    if ( !cbs.empty() ) {
+      schedule( cbs.begin(), cbs.end() );
+      cbs.clear();
+    }
 
     for ( int i = 0; i < ret; ++i ) {
       epoll_event& event = events[i];
@@ -353,6 +375,11 @@ void IOManager::idle()
 
     raw_ptr->swapOut();
   }
+}
+
+void IOManager::onTimerInsertedAtFront()
+{
+  tickle();
 }
 
 }

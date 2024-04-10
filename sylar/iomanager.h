@@ -1,17 +1,13 @@
 #pragma once
 
-#include "scheduler.h"
-#include "sylar/fiber.h"
-#include "sylar/thread.h"
-#include <atomic>
-#include <cstddef>
-#include <functional>
-#include <memory>
-#include <vector>
+#include "sylar/scheduler.h"
+#include "sylar/timer.h"
 
 namespace sylar {
 
-class IOManager : public Scheduler
+class IOManager
+  : public Scheduler
+  , public TimerManager
 {
 public:
   using SPtr = std::shared_ptr<IOManager>;
@@ -62,8 +58,10 @@ protected:
   void tickle() override;
   bool stopping() override;
   void idle() override;
+  void onTimerInsertedAtFront() override;
 
   void contextResize( std::size_t size );
+  bool stopping( std::uint64_t& timeout );
 
 private:
   int m_epfd { 0 };
