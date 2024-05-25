@@ -17,7 +17,9 @@ static Logger::SPtr g_logger { SYLAR_LOG_NAME( "system" ) };
 static std::atomic<std::uint64_t> s_fiber_id { 0 };
 static std::atomic<std::uint64_t> s_fiber_count { 0 };
 
+// 当前线程正在运行的协程，在协程模块初始化时指向主协程
 static thread_local Fiber* t_fiber { nullptr };
+// 当前线程的主协程
 static thread_local Fiber::SPtr t_threadFiber { nullptr };
 
 static ConfigVar<std::uint32_t>::SPtr g_fiber_stack_size {
@@ -158,7 +160,7 @@ void Fiber::SetThis( Fiber* f )
   t_fiber = f;
 }
 
-// 返回当前协程
+// 返回当前协程，第一次调用时如果主协程还没初始化，会初始化，所以使用协程前需要显式调用一次
 Fiber::SPtr Fiber::GetThis()
 {
   if ( t_fiber ) {
@@ -207,8 +209,7 @@ void Fiber::MainFunc()
                                 << sylar::BacktraceToString();
   } catch ( ... ) {
     cur->m_state = EXCEPT;
-    SYLAR_LOG_ERROR( g_logger ) << "Fiber Except"
-                                << " fiber_id = " << cur->getId() << std::endl
+    SYLAR_LOG_ERROR( g_logger ) << "Fiber Except" << " fiber_id = " << cur->getId() << std::endl
                                 << sylar::BacktraceToString();
   }
 
@@ -233,8 +234,7 @@ void Fiber::CallerMainFunc()
                                 << sylar::BacktraceToString();
   } catch ( ... ) {
     cur->m_state = EXCEPT;
-    SYLAR_LOG_ERROR( g_logger ) << "Fiber Except: "
-                                << " fiber_id = " << cur->getId() << std::endl
+    SYLAR_LOG_ERROR( g_logger ) << "Fiber Except: " << " fiber_id = " << cur->getId() << std::endl
                                 << sylar::BacktraceToString();
   }
 

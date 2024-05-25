@@ -562,7 +562,8 @@ void LogFormatter::init()
     vec.push_back( std::make_tuple( nstr, "", REGULAR_SYMBOL ) );
   }
 
-  static std::map<std::string, std::function<FormatItem::SPtr( const std::string& str )>> s_format_items {
+  static std::map<std::string, std::function<FormatItem::SPtr( const std::string& str )>> s_format_items
+  {
 #define XX( str, C )                                                                                               \
   { #str, []( const std::string& fmt ) { return FormatItem::SPtr( std::make_shared<C>( fmt ) ); } },
     XX( m, MessageFormatItem )    // m:消息

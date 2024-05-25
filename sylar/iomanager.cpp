@@ -3,6 +3,7 @@
 #include "macro.h"
 #include "sylar/fiber.h"
 #include "sylar/scheduler.h"
+#include "sylar/util.h"
 
 #include <cassert>
 #include <cerrno>
@@ -266,7 +267,7 @@ IOManager* IOManager::GetThis()
 
 void IOManager::tickle()
 {
-  if ( hasIdleThreads() ) {
+  if ( !hasIdleThreads() ) {
     return;
   }
   int ret = write( m_tickleFds[1], "T", 1 );

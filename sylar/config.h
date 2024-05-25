@@ -264,7 +264,7 @@ class ConfigVar : public ConfigVarBase
 public:
   using RWMutexType = RWMutex;
   using SPtr = std::shared_ptr<ConfigVar>;
-  using on_change_cb = std::function<void( const T& old_valuem, const T& new_value )>;
+  using on_change_cb = std::function<void( const T& old_value, const T& new_value )>;
 
   ConfigVar( const std::string& name, const T& default_value, const std::string& description = "" )
     : ConfigVarBase( name, description ), m_val( default_value )

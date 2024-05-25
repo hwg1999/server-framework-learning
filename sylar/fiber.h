@@ -26,7 +26,7 @@ public:
   };
 
 private:
-  Fiber();
+  Fiber();  // 用于初始化当前线程的主协程
 
 public:
   Fiber( std::function<void()> cb, std::size_t stacksize = 0, bool use_caller = false );
