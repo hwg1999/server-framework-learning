@@ -44,6 +44,7 @@ public:
   int getFamily() const;
 
   virtual const sockaddr* getAddr() const = 0;
+  virtual sockaddr* getAddr() = 0;
   virtual socklen_t getAddrLen() const = 0;
 
   virtual std::ostream& insert( std::ostream& os ) const = 0;
@@ -80,6 +81,7 @@ public:
   IPv4Address( uint32_t address = INADDR_ANY, uint32_t port = 0 );
 
   const sockaddr* getAddr() const override;
+  sockaddr* getAddr() override;
   socklen_t getAddrLen() const override;
   std::ostream& insert( std::ostream& os ) const override;
 
@@ -105,6 +107,7 @@ public:
   IPv6Address( const uint8_t address[16], uint32_t port = 0 );
 
   const sockaddr* getAddr() const override;
+  sockaddr* getAddr() override;
   socklen_t getAddrLen() const override;
   std::ostream& insert( std::ostream& os ) const override;
 
@@ -126,7 +129,9 @@ public:
   UnixAddress( const std::string& path );
 
   const sockaddr* getAddr() const override;
+  sockaddr* getAddr() override;
   socklen_t getAddrLen() const override;
+  void setAddrLen( uint32_t val );
   std::ostream& insert( std::ostream& os ) const override;
 
 private:
@@ -141,6 +146,7 @@ public:
   UnknownAddress( int family );
   UnknownAddress( const sockaddr& addr );
   const sockaddr* getAddr() const override;
+  sockaddr* getAddr() override;
   socklen_t getAddrLen() const override;
   std::ostream& insert( std::ostream& os ) const override;
 

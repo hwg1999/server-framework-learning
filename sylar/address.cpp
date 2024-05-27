@@ -318,6 +318,11 @@ const sockaddr* IPv4Address::getAddr() const
   return (sockaddr*)&m_addr;
 }
 
+sockaddr* IPv4Address::getAddr()
+{
+  return (sockaddr*)&m_addr;
+}
+
 socklen_t IPv4Address::getAddrLen() const
 {
   return sizeof( m_addr );
@@ -403,6 +408,11 @@ IPv6Address::IPv6Address( const uint8_t address[16], uint32_t port )
 }
 
 const sockaddr* IPv6Address::getAddr() const
+{
+  return (sockaddr*)&m_addr;
+}
+
+sockaddr* IPv6Address::getAddr()
 {
   return (sockaddr*)&m_addr;
 }
@@ -513,9 +523,19 @@ const sockaddr* UnixAddress::getAddr() const
   return (sockaddr*)&m_addr;
 }
 
+sockaddr* UnixAddress::getAddr()
+{
+  return (sockaddr*)&m_addr;
+}
+
 socklen_t UnixAddress::getAddrLen() const
 {
   return m_length;
+}
+
+void UnixAddress::setAddrLen( uint32_t val )
+{
+  m_length = val;
 }
 
 std::ostream& UnixAddress::insert( std::ostream& os ) const
@@ -538,6 +558,11 @@ UnknownAddress::UnknownAddress( const sockaddr& addr )
 }
 
 const sockaddr* UnknownAddress::getAddr() const
+{
+  return &m_addr;
+}
+
+sockaddr* UnknownAddress::getAddr()
 {
   return &m_addr;
 }
