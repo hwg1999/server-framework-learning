@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <type_traits>
 
-#define SYLAR_LITTER_ENDIAN 1
+#define SYLAR_LITTLE_ENDIAN 1
 #define SYLAR_BIG_ENDIAN 2
 
 namespace sylar {
@@ -30,7 +30,7 @@ std::enable_if_t<sizeof( T ) == sizeof( std::uint16_t ), T> byteswap( T value )
 #if BYTE_ORDER == BIG_ENDIAN
 #define SYLAR_BYTE_ORDER SYLAR_BIG_ENDIAN
 #else
-#define SYLAR_BYTE_ORDER SYLAR_LITTER_ENDIAN
+#define SYLAR_BYTE_ORDER SYLAR_LITTLE_ENDIAN
 #endif
 
 #if SYLAR_BYTE_ORDER == SYLAR_BIG_ENDIAN
