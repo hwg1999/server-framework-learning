@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
-project(sylar LANGUAGES CXX)
+project(sylar LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+
 # set(CMAKE_CXX_FLAGS "-std=c++17 -Wall -Wno-deprecated -Werror -Wno-unused-function")
-file(GLOB LIB_SRC "${CMAKE_SOURCE_DIR}/sylar/*.cpp")
+file(GLOB_RECURSE LIB_SRC "${CMAKE_SOURCE_DIR}/sylar/*")
 include_directories(${CMAKE_SOURCE_DIR})
 add_library(sylar SHARED ${LIB_SRC})
 
