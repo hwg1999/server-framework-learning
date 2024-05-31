@@ -120,4 +120,6 @@ private:
   Address::SPtr m_remoteAddress;
 };
 
+std::ostream& operator<<( std::ostream& os, const Socket& sock );
+
 }

@@ -5,6 +5,7 @@
 #include "sylar/iomanager.h"
 #include "sylar/log.h"
 #include <asm-generic/socket.h>
+#include <bits/types/struct_timeval.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstring>
@@ -78,6 +79,24 @@ int64_t Socket::getSendTimeout()
 }
 
 void Socket::setSendTimeout( int64_t val )
+{
+  struct timeval tv
+  {
+    int( val / 1000 ), int( val % 1000 * 1000 )
+  };
+  setOption( SOL_SOCKET, SO_RCVTIMEO, tv );
+}
+
+int64_t Socket::getRecvTimeout()
+{
+  FdCtx::SPtr ctx = FdMgr::GetInstance().get( m_sock );
+  if ( ctx ) {
+    return ctx->getTimeout( SO_SNDTIMEO );
+  }
+  return -1;
+}
+
+void Socket::setRecvTimeout( int64_t val )
 {
   struct timeval tv
   {
@@ -465,6 +484,11 @@ void Socket::newSock()
     SYLAR_LOG_ERROR( g_logger ) << "socket(" << m_family << ", " << m_type << ", " << m_protocol
                                 << ") errno=" << errno << " errstr=" << strerror( errno );
   }
+}
+
+std::ostream& operator<<( std::ostream& os, const Socket& sock )
+{
+  return sock.dump( os );
 }
 
 }
