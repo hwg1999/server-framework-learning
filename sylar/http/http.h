@@ -225,6 +225,8 @@ public:
   std::ostream& dump( std::ostream& os ) const;
   std::string toString() const;
 
+  void init();
+
 private:
   HttpMethod m_method;
   uint8_t m_version;
@@ -288,6 +290,10 @@ private:
   std::string m_reason;
   MapType m_headers;
 };
+
+std::ostream& operator<<( std::ostream& os, const HttpRequest& req );
+
+std::ostream& operator<<( std::ostream& os, const HttpResponse& rsp );
 
 }
 

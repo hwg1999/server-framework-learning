@@ -23,6 +23,16 @@ static sylar::ConfigVar<uint64_t>::SPtr g_http_request_max_body_size
 static uint64_t s_http_request_buffer_size = 0;
 static uint64_t s_http_request_max_body_size = 0;
 
+uint64_t HttpRequestParser::GetHttpRequestBufferSize()
+{
+  return s_http_request_buffer_size;
+}
+
+uint64_t HttpRequestParser::GetHttpRequestMaxBodySize()
+{
+  return s_http_request_max_body_size;
+}
+
 struct RequestSizeIniter
 {
   RequestSizeIniter()

@@ -152,6 +152,18 @@ std::string HttpRequest::toString() const
   return ss.str();
 }
 
+void HttpRequest::init()
+{
+  std::string conn = getHeader( "connection" );
+  if ( conn.empty() ) {
+    if ( strcasecmp( conn.c_str(), "keep-alive" ) == 0 ) {
+      m_close = false;
+    } else {
+      m_close = true;
+    }
+  }
+}
+
 std::ostream& HttpRequest::dump( std::ostream& os ) const
 {
   // GET /uri HTTP/1.1
@@ -223,6 +235,16 @@ std::ostream& HttpResponse::dump( std::ostream& os ) const
     os << "\r\n";
   }
   return os;
+}
+
+std::ostream& operator<<( std::ostream& os, const HttpRequest& req )
+{
+  return req.dump( os );
+}
+
+std::ostream& operator<<( std::ostream& os, const HttpResponse& rsp )
+{
+  return rsp.dump( os );
 }
 
 }

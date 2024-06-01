@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cxxabi.h>
 #include <pthread.h>
 #include <string>
 #include <vector>
@@ -14,4 +15,12 @@ std::string BacktraceToString( int size = 64, int skip = 2, const std::string& p
 
 std::uint64_t GetCurrentMS();
 std::uint64_t GetCurrentUS();
+
+template<typename T>
+const char* TypeToName()
+{
+  static const char* s_name = abi::__cxa_demangle( typeid( T ).name(), nullptr, nullptr, nullptr );
+  return s_name;
+}
+
 } // namespace sylar

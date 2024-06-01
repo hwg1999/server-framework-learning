@@ -28,7 +28,7 @@ public:
   uint64_t getRecvTimeout() const { return m_recvTimeout; }
   std::string getName() const { return m_name; }
   void setRecvTimeout( uint64_t val ) { m_recvTimeout = val; }
-  void setName( const std::string& val ) { m_name = val; }
+  virtual void setName( const std::string& val ) { m_name = val; }
 
   bool isStop() const { return m_isStop; }
 
@@ -36,13 +36,14 @@ protected:
   virtual void handleClient( Socket::SPtr client );
   virtual void startAccept( Socket::SPtr sock );
 
-private:
+protected:
   std::vector<Socket::SPtr> m_socks;
   IOManager* m_worker;
   IOManager* m_acceptWorker;
   uint64_t m_recvTimeout;
   std::string m_name;
   bool m_isStop;
+  std::string m_type;
 };
 
 }
