@@ -29,7 +29,7 @@ public:
                       int type = 0,
                       int protocol = 0 );
   static SPtr LoopUpAny( const std::string& host, int family = AF_UNSPEC, int type = 0, int protocol = 0 );
-  static std::shared_ptr<IPAddress> LoopUpAnyIPAddress( const std::string& host,
+  static std::shared_ptr<IPAddress> LookUpAnyIPAddress( const std::string& host,
                                                         int family = AF_UNSPEC,
                                                         int type = 0,
                                                         int protocol = 0 );
@@ -153,5 +153,7 @@ public:
 private:
   sockaddr m_addr;
 };
+
+std::ostream& operator<<( std::ostream& os, const Address& addr );
 
 }

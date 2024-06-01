@@ -52,7 +52,7 @@ Address::SPtr Address::LoopUpAny( const std::string& host, int family, int type,
   return nullptr;
 }
 
-IPAddress::SPtr Address::LoopUpAnyIPAddress( const std::string& host, int family, int type, int protocol )
+IPAddress::SPtr Address::LookUpAnyIPAddress( const std::string& host, int family, int type, int protocol )
 {
   std::vector<Address::SPtr> result;
   if ( LookUp( result, host, family, type, protocol ) ) {
@@ -576,6 +576,11 @@ std::ostream& UnknownAddress::insert( std::ostream& os ) const
 {
   os << "[UnknownAddress family=" << m_addr.sa_family << "]";
   return os;
+}
+
+std::ostream& operator<<( std::ostream& os, const Address& addr )
+{
+  return addr.insert( os );
 }
 
 }

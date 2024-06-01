@@ -24,7 +24,7 @@ void test_fiber()
   sockaddr_in addr;
   std::memset( &addr, 0, sizeof( addr ) );
   addr.sin_family = AF_INET;
-  addr.sin_port = htons( 80 );
+  addr.sin_port = htons( 8000 );
   inet_pton( AF_INET, "127.0.0.1", &addr.sin_addr.s_addr );
 
   int ret = connect( sock, (const sockaddr*)&addr, sizeof( addr ) );

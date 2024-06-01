@@ -13,7 +13,7 @@ void run()
 {
   g_logger->setLevel( sylar::LogLevel::INFO );
   sylar::http::HttpServer::SPtr server { std::make_shared<sylar::http::HttpServer>( true ) };
-  sylar::Address::SPtr addr = sylar::Address::LoopUpAnyIPAddress( "127.0.0.1:8000" );
+  sylar::Address::SPtr addr = sylar::Address::LookUpAnyIPAddress( "127.0.0.1:8000" );
   while ( !server->bind( addr ) ) {
     sleep( 2 );
   }

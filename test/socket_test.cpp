@@ -8,7 +8,7 @@ static sylar::Logger::SPtr g_logger = SYLAR_LOG_ROOT();
 
 void test_socket()
 {
-  sylar::IPAddress::SPtr addr = sylar::Address::LoopUpAnyIPAddress( "www.baidu.com" );
+  sylar::IPAddress::SPtr addr = sylar::Address::LookUpAnyIPAddress( "www.baidu.com" );
   if ( addr ) {
     SYLAR_LOG_INFO( g_logger ) << "get address: " << addr->toString();
   } else {
