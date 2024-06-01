@@ -8,7 +8,7 @@ file(GLOB_RECURSE LIB_SRC "${CMAKE_SOURCE_DIR}/sylar/*")
 include_directories(${CMAKE_SOURCE_DIR})
 add_library(sylar SHARED ${LIB_SRC})
 
-file(GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/test/*")
+file(GLOB SOURCE_FILES "${CMAKE_SOURCE_DIR}/test/*" "${CMAKE_SOURCE_DIR}/example/*")
 set(LINK_LIBS sylar dl yaml-cpp pthread)
 
 foreach(SOURCE_FILE ${SOURCE_FILES})
@@ -19,3 +19,4 @@ endforeach()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+file(COPY ${CMAKE_SOURCE_DIR}/config DESTINATION ${EXECUTABLE_OUTPUT_PATH})

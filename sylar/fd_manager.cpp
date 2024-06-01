@@ -14,7 +14,7 @@ FdCtx::FdCtx( int fd )
   , m_sysNonblock { false }
   , m_userNonblock { false }
   , m_isClosed { false }
-  , m_fd { false }
+  , m_fd { fd }
   , m_recvTimeout { std::numeric_limits<uint64_t>::max() }
   , m_sendTimeout { std::numeric_limits<uint64_t>::max() }
 {
