@@ -1,5 +1,6 @@
-#include "log.h"
-#include "config.h"
+#include "sylar/log.h"
+#include "sylar/config.h"
+#include "sylar/util.h"
 #include <cctype>
 #include <cstdarg>
 #include <cstddef>
@@ -11,9 +12,8 @@
 #include <memory>
 #include <ostream>
 #include <set>
-#include <sstream>
-#include <string>
-#include <tuple>
+#include <string_view>
+#include <utility>
 #include <vector>
 #include <yaml-cpp/node/node.h>
 
@@ -38,10 +38,10 @@ const char* LogLevel::ToString( LogLevel::Level level )
   return "UNKNOW";
 }
 
-LogLevel::Level LogLevel::FromString( const std::string& str )
+LogLevel::Level LogLevel::FromString( std::string_view levelStr )
 {
 #define XX( level, val )                                                                                           \
-  if ( str == #val ) {                                                                                             \
+  if ( levelStr == #val ) {                                                                                        \
     return LogLevel::level;                                                                                        \
   }
 
@@ -66,19 +66,19 @@ LogEvent::LogEvent( Logger::SPtr logger,
                     const char* file,
                     std::int32_t line,
                     std::uint32_t elapse,
-                    std::uint32_t thread_id,
-                    std::uint32_t fiber_id,
+                    std::uint32_t threadId,
+                    std::uint32_t fiberId,
                     std::uint64_t time,
-                    const std::string& thread_name )
-  : m_file( file )
-  , m_line( line )
-  , m_elapse( elapse )
-  , m_threadId( thread_id )
-  , m_fiberId( fiber_id )
-  , m_time( time )
-  , m_threadName( thread_name )
-  , m_logger( logger )
-  , m_level( level )
+                    std::string_view threadName )
+  : m_file { file }
+  , m_line { line }
+  , m_elapse { elapse }
+  , m_threadId { threadId }
+  , m_fiberId { fiberId }
+  , m_time { time }
+  , m_threadName { threadName }
+  , m_logger { logger }
+  , m_level { level }
 {}
 
 void LogEvent::format( const char* fmt, ... )
@@ -99,8 +99,12 @@ void LogEvent::format( const char* fmt, va_list al )
   }
 }
 
-LogEventWrap::LogEventWrap( LogEvent::SPtr event ) : m_event( event ) {}
+LogEventWrap::LogEventWrap( LogEvent::SPtr event ) : m_event { event } {}
 
+/**
+ * @brief LogEventWrap析构时写日志
+ *
+ */
 LogEventWrap::~LogEventWrap()
 {
   m_event->getLogger()->log( m_event->getLevel(), m_event );
@@ -109,7 +113,7 @@ LogEventWrap::~LogEventWrap()
 class MessageFormatItem : public LogFormatter::FormatItem
 {
 public:
-  MessageFormatItem( const std::string& str = "" ) {}
+  MessageFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -122,7 +126,7 @@ public:
 class LevelFormatItem : public LogFormatter::FormatItem
 {
 public:
-  LevelFormatItem( const std::string& str = "" ) {}
+  LevelFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -135,7 +139,7 @@ public:
 class ElapseFormatItem : public LogFormatter::FormatItem
 {
 public:
-  ElapseFormatItem( const std::string& str = "" ) {}
+  ElapseFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -148,7 +152,7 @@ public:
 class NameFormatItem : public LogFormatter::FormatItem
 {
 public:
-  NameFormatItem( const std::string& str = "" ) {}
+  NameFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os, Logger::SPtr logger, LogLevel::Level level, LogEvent::SPtr event ) override
   {
     os << logger->getName();
@@ -158,7 +162,7 @@ public:
 class ThreadIdFormatItem : public LogFormatter::FormatItem
 {
 public:
-  ThreadIdFormatItem( const std::string& str = "" ) {}
+  ThreadIdFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -171,7 +175,7 @@ public:
 class FiberIdFormatItem : public LogFormatter::FormatItem
 {
 public:
-  FiberIdFormatItem( const std::string& str = "" ) {}
+  FiberIdFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -184,7 +188,7 @@ public:
 class ThreadNameFormatItem : public LogFormatter::FormatItem
 {
 public:
-  ThreadNameFormatItem( const std::string& str = "" ) {}
+  ThreadNameFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os, Logger::SPtr logger, LogLevel::Level level, LogEvent::SPtr event ) override
   {
     os << event->getThreadName();
@@ -194,7 +198,7 @@ public:
 class DateTimeFormatItem : public LogFormatter::FormatItem
 {
 public:
-  DateTimeFormatItem( const std::string& format = "%Y:%m:%d %H:%M:%S" ) : m_format( format )
+  DateTimeFormatItem( std::string_view format = "%Y:%m:%d %H:%M:%S" ) : m_format { format }
   {
     if ( format.empty() ) {
       m_format = "%Y:%m:%d %H:%M:%S";
@@ -221,7 +225,7 @@ private:
 class FilenameFormatItem : public LogFormatter::FormatItem
 {
 public:
-  FilenameFormatItem( const std::string& str = "" ) {}
+  FilenameFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -234,7 +238,7 @@ public:
 class LineFormatItem : public LogFormatter::FormatItem
 {
 public:
-  LineFormatItem( const std::string& str = "" ) {}
+  LineFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os, Logger::SPtr logger, LogLevel::Level level, LogEvent::SPtr event ) override
   {
     os << event->getLine();
@@ -244,7 +248,7 @@ public:
 class NewLineFormatItem : public LogFormatter::FormatItem
 {
 public:
-  NewLineFormatItem( const std::string& str = "" ) {}
+  NewLineFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -257,7 +261,7 @@ public:
 class StringFormatItem : public LogFormatter::FormatItem
 {
 public:
-  StringFormatItem( const std::string& str ) : m_string( str ) {}
+  StringFormatItem( std::string_view str ) : m_string { str } {}
   void format( std::ostream& os, Logger::SPtr logger, LogLevel::Level level, LogEvent::SPtr event ) override
   {
     os << m_string;
@@ -270,7 +274,7 @@ private:
 class TabFormatItem : public LogFormatter::FormatItem
 {
 public:
-  TabFormatItem( const std::string& str = "" ) {}
+  TabFormatItem( std::string_view str = "" ) {}
   void format( std::ostream& os,
                std::shared_ptr<Logger> logger,
                LogLevel::Level level,
@@ -293,7 +297,8 @@ LogFormatter::SPtr LogAppender::getFormatter()
   return m_formatter;
 }
 
-Logger::Logger( const std::string& name ) : m_name( name ), m_level( LogLevel::DEBUG )
+Logger::Logger( std::string_view name )
+  : m_name { name }, m_level { LogLevel::DEBUG }, m_createTime { GetElapsedMS() }
 {
   m_formatter.reset( new LogFormatter( "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n" ) );
 }
@@ -324,14 +329,17 @@ void Logger::clearAppenders()
   m_appenders.clear();
 }
 
+/**
+ * @brief 调用Logger的所有appenders写一遍日志
+ */
 void Logger::log( LogLevel::Level level, LogEvent::SPtr event )
 {
   if ( level >= m_level ) {
     auto self = shared_from_this();
     MutexType::Lock lock( m_mutex );
     if ( !m_appenders.empty() ) {
-      for ( auto& i : m_appenders ) {
-        i->log( self, level, event );
+      for ( auto& appender : m_appenders ) {
+        appender->log( self, level, event );
       }
     } else if ( m_root ) {
       m_root->log( level, event );
@@ -351,15 +359,17 @@ void Logger::setFormatter( LogFormatter::SPtr val )
     }
   }
 }
-void Logger::setFormatter( const std::string& val )
+
+void Logger::setFormatter( std::string_view val )
 {
-  sylar::LogFormatter::SPtr new_val( std::make_shared<sylar::LogFormatter>( val ) );
-  if ( new_val->isError() ) {
+  sylar::LogFormatter::SPtr newVal { std::make_shared<sylar::LogFormatter>( val ) };
+  if ( newVal->isError() ) {
     std::cout << "Logger setFormatter name = " << m_name << " value = " << val << " invalid formatter" << std::endl;
     return;
   }
-  m_formatter = new_val;
+  m_formatter = newVal;
 }
+
 LogFormatter::SPtr Logger::getFormatter()
 {
   MutexType::Lock lock { m_mutex };
@@ -411,7 +421,7 @@ void Logger::fatal( LogEvent::SPtr event )
   log( LogLevel::FATAL, event );
 }
 
-FileLogAppender::FileLogAppender( const std::string& filename ) : m_filename( filename )
+FileLogAppender::FileLogAppender( std::string_view filename ) : m_filename { filename }
 {
   reopen();
 }
@@ -481,7 +491,7 @@ std::string StdoutLogAppender::toYamlString()
   return ss.str();
 }
 
-LogFormatter::LogFormatter( const std::string& pattern ) : m_pattern( pattern )
+LogFormatter::LogFormatter( std::string_view pattern ) : m_pattern { pattern }
 {
   init();
 }
@@ -489,90 +499,103 @@ LogFormatter::LogFormatter( const std::string& pattern ) : m_pattern( pattern )
 std::string LogFormatter::format( std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::SPtr event )
 {
   std::stringstream ss;
-  for ( auto& i : m_items ) {
-    i->format( ss, logger, level, event );
+  for ( auto& item : m_items ) {
+    item->format( ss, logger, level, event );
   }
   return ss.str();
 }
 
+/**
+ * @brief 简单的状态机判断，提取pattern中的常规字符和模式字符
+ * 解析的过程就是从头到尾遍历，根据状态标志决定当前字符是常规字符还是模式字符
+ * 一共有两种状态，即正在解析常规字符和正在解析模板转义字符
+ * 比较麻烦的是%%d，后面可以接一对大括号指定时间格式，比如%d{%Y-%m-%d %H:%M:%S}，这个状态需要特殊处理
+ *  一旦状态出错就停止解析，并设置错误标志，未识别的pattern转义字符也算出错
+ */
 void LogFormatter::init()
 {
-  std::vector<std::tuple<std::string, std::string, int>> vec;
-  std::string nstr;
-  for ( size_t i = 0; i < m_pattern.size(); ++i ) {
-    if ( m_pattern[i] != '%' ) {
-      nstr.append( 1, m_pattern[i] );
-      continue;
-    }
+  // 按顺序存储解析到的pattern项
+  // 每个pattern包括一个整数类型和一个字符串，类型为REGULAR_SYMBOL表示该pattern是常规字符串，为INNER_SYMBOL表示该pattern需要转义
+  // 日期格式单独用下面的dataformat存储
+  std::vector<std::pair<int, std::string>> patterns;
+  // 临时存储常规字符串
+  std::string tmp;
+  // 日期格式字符串，默认把位于%d后面的大括号对里的全部字符当作格式字符，不校验是否符合日志格式
+  std::string dateFormat;
+  // 是否正在解析常规字符，初始时为true
+  bool parsingString { true };
 
-    if ( ( i + 1 ) < m_pattern.size() ) {
-      if ( m_pattern[i + 1] == '%' ) {
-        nstr.append( 1, '%' );
+  // 默认 "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
+  size_t i = 0;
+  while ( i < m_pattern.size() ) {
+    std::string c = std::string( 1, m_pattern[i] );
+    if ( c == "%" ) {
+      if ( parsingString ) {
+        if ( !tmp.empty() ) {
+          patterns.push_back( std::make_pair( REGULAR_SYMBOL, tmp ) );
+        }
+        tmp.clear();
+        parsingString = false; // 在解析普通字符时遇到%, 表示开始解析模板字符
+        ++i;
+      } else {
+        patterns.push_back( std::make_pair( INNER_SYMBOL, c ) );
+        parsingString = true; // 在解析模板字符时遇到%, 表示这里是一个转义
+        ++i;
+        continue;
+      }
+    } else {                 // c不是%
+      if ( parsingString ) { // 继续解析普通字符，解析得到的字符串作为一个普通字符串加入到patterns中
+        tmp += c;
+        ++i;
+        continue;
+      } else { // 模板字符，直接添加到patterns中，添加完成后，状态变为解析普通字符，%d做特殊处理
+        patterns.push_back( std::make_pair( INNER_SYMBOL, c ) );
+        parsingString = true;
+
+        // 之后是对%d的特殊处理，如果%d后面跟了一对大括号，那么把大括号里面的内容提取出来作为dateFormat
+        if ( c != "d" ) {
+          ++i;
+          continue;
+        }
+
+        ++i;
+        if ( i < m_pattern.size() && m_pattern[i] != '{' ) {
+          continue;
+        }
+
+        ++i;
+        while ( i < m_pattern.size() && m_pattern[i] != '}' ) {
+          dateFormat.push_back( m_pattern[i] );
+          ++i;
+        }
+
+        if ( m_pattern[i] != '}' ) { // %d 后的大括号没闭合
+          std::cout << "[ERROR] LogFormatter::init() pattern: [" << m_pattern << "] '{' not closed" << std::endl;
+          m_error = true;
+          break;
+        }
+        ++i;
         continue;
       }
     }
-
-    size_t n = i + 1;
-    int fmt_status = REGULAR_SYMBOL;
-    size_t fmt_begin = 0;
-
-    std::string str;
-    std::string fmt;
-    while ( n < m_pattern.size() ) {
-      if ( !fmt_status && ( !isalpha( m_pattern[n] ) && m_pattern[n] != '{' && m_pattern[n] != '}' ) ) {
-        str = m_pattern.substr( i + 1, n - i - 1 );
-        break;
-      }
-
-      if ( fmt_status == REGULAR_SYMBOL && m_pattern[n] == '{' ) {
-        str = m_pattern.substr( i + 1, n - i - 1 );
-        fmt_status = INNER_SYMBOL; // 解析格式
-        fmt_begin = n;
-        ++n;
-        continue;
-      } else if ( fmt_status == INNER_SYMBOL && m_pattern[n] == '}' ) {
-        fmt = m_pattern.substr( fmt_begin + 1, n - fmt_begin - 1 );
-        fmt_status = REGULAR_SYMBOL;
-        ++n;
-        break;
-      }
-
-      ++n;
-
-      if ( n == m_pattern.size() && str.empty() ) {
-        str = m_pattern.substr( i + 1 );
-      }
-    }
-
-    if ( fmt_status == REGULAR_SYMBOL ) {
-      if ( !nstr.empty() ) {
-        vec.push_back( std::make_tuple( nstr, std::string(), 0 ) );
-        nstr.clear();
-      }
-      vec.push_back( std::make_tuple( str, fmt, INNER_SYMBOL ) );
-      i = n - 1;
-    } else if ( fmt_status == INNER_SYMBOL ) {
-      std::cout << "pattern parse error: " << m_pattern << " - " << m_pattern.substr( i ) << std::endl;
-      m_error = true;
-      vec.push_back( std::make_tuple( "<<pattern_error>>", fmt, REGULAR_SYMBOL ) );
-    }
   }
 
-  if ( !nstr.empty() ) {
-    vec.push_back( std::make_tuple( nstr, "", REGULAR_SYMBOL ) );
+  // 模板解析结束之后剩余的常规字符也要算进去
+  if ( !tmp.empty() ) {
+    patterns.push_back( std::make_pair( REGULAR_SYMBOL, tmp ) );
+    tmp.clear();
   }
 
-  static std::map<std::string, std::function<FormatItem::SPtr( const std::string& str )>> s_format_items
+  static std::map<std::string, std::function<FormatItem::SPtr( std::string_view str )>> s_format_items
   {
 #define XX( str, C )                                                                                               \
-  { #str, []( const std::string& fmt ) { return FormatItem::SPtr( std::make_shared<C>( fmt ) ); } },
+  { #str, []( std::string_view fmt ) { return FormatItem::SPtr( std::make_shared<C>( fmt ) ); } },
     XX( m, MessageFormatItem )    // m:消息
     XX( p, LevelFormatItem )      // p:日志级别
     XX( r, ElapseFormatItem )     // r:累计毫秒数
     XX( c, NameFormatItem )       // c:日志名称
     XX( t, ThreadIdFormatItem )   // t:线程id
     XX( n, NewLineFormatItem )    // n:换行
-    XX( d, DateTimeFormatItem )   // d:时间
     XX( f, FilenameFormatItem )   // f:文件名
     XX( l, LineFormatItem )       // l:行号
     XX( T, TabFormatItem )        // T:Tab
@@ -581,17 +604,19 @@ void LogFormatter::init()
 #undef XX
   };
 
-  for ( auto& i : vec ) {
-    if ( std::get<FORMAT_STATUS>( i ) == REGULAR_SYMBOL ) {
-      m_items.push_back( std::make_shared<StringFormatItem>( std::get<RAW_STRING>( i ) ) );
+  for ( const auto& [symbolType, pattern] : patterns ) {
+    if ( REGULAR_SYMBOL == symbolType ) {
+      m_items.push_back( std::make_shared<StringFormatItem>( pattern ) );
+    } else if ( pattern == "d" ) {
+      m_items.push_back( std::make_shared<DateTimeFormatItem>( dateFormat ) );
     } else {
-      auto it = s_format_items.find( std::get<RAW_STRING>( i ) );
-      if ( it == s_format_items.end() ) {
-        m_items.push_back( FormatItem::SPtr(
-          std::make_shared<StringFormatItem>( "<<error_format %" + std::get<RAW_STRING>( i ) + ">>\n" ) ) );
+      const auto& iter = s_format_items.find( pattern );
+      if ( iter == s_format_items.end() ) {
+        std::cout << "[ERROR] LogFormatter::init()  pattern: [" << m_pattern << "] "
+                  << "unknown format item: " << pattern << std::endl;
         m_error = true;
       } else {
-        m_items.push_back( it->second( std::get<FORMAT_STRING>( i ) ) );
+        m_items.push_back( iter->second( pattern ) );
       }
     }
   }
@@ -605,6 +630,10 @@ LoggerManager::LoggerManager()
   init();
 }
 
+/**
+ * @brief 如果指定名称的日志器未找到，那会就新创建一个，但是新创建的Logger是不带Appender的，
+ * 需要手动添加Appender
+ */
 Logger::SPtr LoggerManager::getLogger( const std::string& name )
 {
   MutexType::Lock lock { m_mutex };
@@ -618,9 +647,12 @@ Logger::SPtr LoggerManager::getLogger( const std::string& name )
   return logger;
 }
 
+/**
+ * @brief 日志输出器配置结构体定义
+ */
 struct LogAppenderDefine
 {
-  int type { 0 };
+  int type { 0 }; // 1 File, 2 Stdout
   LogLevel::Level level { LogLevel::UNKNOW };
   std::string formatter;
   std::string file;
@@ -631,6 +663,9 @@ struct LogAppenderDefine
   }
 };
 
+/**
+ * @brief 日志器配置结构体定义
+ */
 struct LogDefine
 {
   std::string name;
@@ -692,6 +727,9 @@ public:
             }
           } else if ( "StdoutLogAppender" == type ) {
             lad.type = 2;
+            if ( appenderNode["formatter"].IsDefined() ) {
+              lad.formatter = appenderNode["formatter"].as<std::string>();
+            }
           } else {
             std::cout << "log config error: appender type is invalid, " << appenderNode << std::endl;
             continue;
@@ -762,6 +800,7 @@ struct LogIniter
         auto it = old_value.find( logDefine );
         sylar::Logger::SPtr logger;
         if ( it == old_value.end() || !( *it == logDefine ) ) {
+          // 新增logger
           logger = SYLAR_LOG_NAME( logDefine.name );
         }
         logger->setLevel( logDefine.level );
@@ -785,6 +824,7 @@ struct LogIniter
         }
       }
 
+      // 以配置文件为主，如果程序里定义了配置文件中未定义的logger，那么把程序里定义的logger设置成无效
       for ( const auto& appender : old_value ) {
         auto it = new_value.find( appender );
         if ( it == new_value.end() ) {
@@ -797,6 +837,9 @@ struct LogIniter
   }
 };
 
+/**
+ * @brief 在main函数之前注册配置更改的回调函数, 用于在更新配置时将log相关的配置加载到Config
+ */
 static LogIniter __log_init;
 
 std::string LoggerManager::toYamlString()

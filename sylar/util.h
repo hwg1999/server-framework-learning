@@ -23,4 +23,6 @@ const char* TypeToName()
   return s_name;
 }
 
+uint64_t GetElapsedMS();
+
 } // namespace sylar

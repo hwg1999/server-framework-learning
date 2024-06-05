@@ -1,6 +1,7 @@
 #include "util.h"
 #include "sylar/fiber.h"
 #include "sylar/log.h"
+#include <ctime>
 #include <execinfo.h>
 #include <sstream>
 #include <sys/syscall.h>
@@ -63,6 +64,13 @@ std::uint64_t GetCurrentUS()
   struct timeval tv;
   gettimeofday( &tv, nullptr );
   return tv.tv_sec * 1000 * 1000ul + tv.tv_usec;
+}
+
+uint64_t GetElapsedMS()
+{
+  struct timespec ts = { 0 };
+  clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
+  return ts.tv_sec * 1000 + ts.tv_nsec / 1000'000;
 }
 
 } // namespace sylar

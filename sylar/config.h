@@ -1,8 +1,8 @@
 #pragma once
 
 #include "boost/lexical_cast.hpp"
-#include "log.h"
-#include "thread.h"
+#include "sylar/log.h"
+#include "sylar/thread.h"
 #include "yaml-cpp/yaml.h"
 #include <algorithm>
 #include <cctype>

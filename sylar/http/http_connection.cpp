@@ -277,8 +277,7 @@ HttpConnection::SPtr HttpConnectionPool::getConnection()
     ++total_;
   }
 
-  return std::make_shared<HttpConnection>(
-    ptr, std::bind( &HttpConnectionPool::ReleasePtr, std::placeholders::_1, this ) );
+  return HttpConnection::SPtr( ptr, std::bind( HttpConnectionPool::ReleasePtr, std::placeholders::_1, this ) );
 }
 
 void HttpConnectionPool::ReleasePtr( HttpConnection* ptr, HttpConnectionPool* pool )
